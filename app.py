@@ -101,6 +101,10 @@ with col1:
         key="email_text",
     )
 
+    # Helper to set the session text via button callback
+    def set_email_text(text: str):
+        st.session_state["email_text"] = text
+
 with col2:
     st.subheader("分類結果")
     
@@ -160,8 +164,7 @@ with example_col1:
         "Win a brand new iPhone! Click the link to enter the sweepstakes",
     ]
     for i, example in enumerate(spam_examples):
-        if st.button(f"範例 {i+1}", key=f"spam_{i}"):
-            st.session_state.email_text = example
+        st.button(f"範例 {i+1}", key=f"spam_{i}", on_click=set_email_text, args=(example,))
 
 with example_col2:
     st.markdown("#### ✅ 正常郵件範例")
@@ -177,8 +180,7 @@ with example_col2:
         "Thanks for the quick turnaround on the report — much appreciated!",
     ]
     for i, example in enumerate(ham_examples):
-        if st.button(f"範例 {i+1}", key=f"ham_{i}"):
-            st.session_state.email_text = example
+        st.button(f"範例 {i+1}", key=f"ham_{i}", on_click=set_email_text, args=(example,))
 
 # Footer
 st.markdown("---")
