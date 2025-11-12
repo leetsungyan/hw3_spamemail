@@ -90,11 +90,15 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     st.subheader("📧 輸入郵件內容")
+    # Bind the text area to session_state so example buttons can populate it
+    if "email_text" not in st.session_state:
+        st.session_state["email_text"] = ""
     email_text = st.text_area(
         "郵件文本:",
         placeholder="請輸入郵件內容...",
         height=200,
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        key="email_text",
     )
 
 with col2:
@@ -147,7 +151,13 @@ with example_col1:
     spam_examples = [
         "Free entry in 2 a wkly comp to win FA Cup final tkts 21st May 2005",
         "Congratulations! You have won a million dollars. Click here to claim",
-        "URGENT: Your account has been compromised. Verify identity NOW!"
+        "URGENT: Your account has been compromised. Verify identity NOW!",
+        "You have an unpaid invoice of $499. Pay now to avoid collection: http://pay.example.com",
+        "Limited time offer! Get Cialis at 90% discount. No prescription needed.",
+        "Final notice: Your subscription will be cancelled unless you confirm billing details here",
+        "Claim your free gift card now by verifying your account at http://fakebank.example.com",
+        "You've been selected for a low interest loan. Apply today to get funds in 24 hours",
+        "Win a brand new iPhone! Click the link to enter the sweepstakes",
     ]
     for i, example in enumerate(spam_examples):
         if st.button(f"範例 {i+1}", key=f"spam_{i}"):
@@ -158,7 +168,13 @@ with example_col2:
     ham_examples = [
         "Hi John, can you review the document I sent?",
         "Meeting at 3pm tomorrow, please confirm",
-        "Thank you for your order. Your package will arrive tomorrow"
+        "Thank you for your order. Your package will arrive tomorrow",
+        "Reminder: Team sync moved to 10am on Friday. Please update the calendar.",
+        "Hi Mom, I arrived safely. I'll call you tonight.",
+        "Invoice attached for last month's consulting work. Please confirm receipt.",
+        "Can you review my PR when you have a moment? It's a small change to tests.",
+        "Your dentist appointment is confirmed for 2pm on 2025-11-20.",
+        "Thanks for the quick turnaround on the report — much appreciated!",
     ]
     for i, example in enumerate(ham_examples):
         if st.button(f"範例 {i+1}", key=f"ham_{i}"):
