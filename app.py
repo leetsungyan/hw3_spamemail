@@ -152,16 +152,17 @@ example_col1, example_col2 = st.columns(2)
 
 with example_col1:
     st.markdown("#### 🚨 垃圾郵件範例")
+    # Curated spam examples (clear spam / phishing / unsolicited ads)
     spam_examples = [
-        "Free entry in 2 a wkly comp to win FA Cup final tkts 21st May 2005",
-        "Congratulations! You have won a million dollars. Click here to claim",
-        "URGENT: Your account has been compromised. Verify identity NOW!",
-        "You have an unpaid invoice of $499. Pay now to avoid collection: http://pay.example.com",
-        "Limited time offer! Get Cialis at 90% discount. No prescription needed.",
-        "Final notice: Your subscription will be cancelled unless you confirm billing details here",
+        "Free entry in 2 a wkly comp to win FA Cup final tkts 21st May 2005. Text FA to 87121 to receive entry",
+        "Congratulations! You have won a $1000 Amazon gift card. Click http://bit.ly/claim-now to claim now",
+        "URGENT: Your account has been compromised. Verify identity NOW at http://fakebank.example.com",
+        "Limited time offer! Get prescription meds at huge discount — click http://pharmacy.example.com",
         "Claim your free gift card now by verifying your account at http://fakebank.example.com",
-        "You've been selected for a low interest loan. Apply today to get funds in 24 hours",
-        "Win a brand new iPhone! Click the link to enter the sweepstakes",
+        "You've been selected for a low interest loan. Apply today to get funds in 24 hours at http://loan.example.com",
+        "Win a brand new iPhone! Click the link to enter the sweepstakes: http://win.example.com",
+        "Act now! Send your bank details to claim your prize — this is a limited time offer",
+        "Buy followers fast: increase your social reach instantly at http://buyfollowers.example.com",
     ]
     for i, example in enumerate(spam_examples):
         st.button(f"範例 {i+1}", key=f"spam_{i}", on_click=set_email_text, args=(example,))
