@@ -7,6 +7,11 @@ import streamlit as st
 import sys
 from pathlib import Path
 import os
+import requests
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
 
 # Add project root to path
 root = Path(__file__).resolve().parent
@@ -154,3 +159,124 @@ st.markdown("""
     <small>Spam Email Classifier v1.0 | Powered by Streamlit</small>
 </div>
 """, unsafe_allow_html=True)
+
+# --- Analysis section -----------------------------------------------------
+@st.cache_data
+def ensure_dataset(csv_path: str):
+    # If dataset not present, download from raw GitHub URL
+    RAW_URL = (
+        "https://raw.githubusercontent.com/PacktPublishing/Hands-On-Artificial-Intelligence-for-Cybersecurity/refs/heads/master/Chapter03/datasets/sms_spam_no_header.csv"
+    )
+    if not os.path.exists(csv_path):
+        os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+        r = requests.get(RAW_URL, timeout=30)
+        r.raise_for_status()
+        with open(csv_path, "wb") as f:
+            f.write(r.content)
+    return csv_path
+
+
+@st.cache_data
+def load_dataset_and_model():
+    csv_path = os.path.join(root, "data", "sms_spam_no_header.csv")
+    ensure_dataset(csv_path)
+    df = load_data(csv_path)
+    df = prepare_dataframe(df)
+    X = df["text"].values
+    y = df["label"].values
+    model = load_model(os.path.join(root, "models", "svm_spam.joblib"))
+    return df, X, y, model
+
+
+def get_class_distribution(df: pd.DataFrame):
+    counts = df["label"].map({0: "ham", 1: "spam"}).value_counts()
+    return counts
+
+
+def get_top_tokens(model, top_n: int = 20):
+    # Expect a sklearn Pipeline with 'tfidf' and 'clf'
+    try:
+        vect = model.named_steps["tfidf"]
+        clf = model.named_steps["clf"]
+    except Exception:
+        return None
+    feature_names = vect.get_feature_names_out()
+    coefs = clf.coef_[0]
+    top_positive_idx = np.argsort(coefs)[-top_n:][::-1]
+    top_negative_idx = np.argsort(coefs)[:top_n]
+    top_pos = [(feature_names[i], float(coefs[i])) for i in top_positive_idx]
+    top_neg = [(feature_names[i], float(coefs[i])) for i in top_negative_idx]
+    return top_pos, top_neg
+
+
+def compute_performance(model, X, y, test_size=0.2, random_state=42):
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=random_state, stratify=y
+    )
+    y_pred = model.predict(X_test)
+    metrics = {
+        "accuracy": float(accuracy_score(y_test, y_pred)),
+        "precision": float(precision_score(y_test, y_pred)),
+        "recall": float(recall_score(y_test, y_pred)),
+        "f1": float(f1_score(y_test, y_pred)),
+    }
+    # decision scores for threshold sweep
+    try:
+        scores = model.decision_function(X_test)
+        if scores.ndim > 1:
+            # multiclass: take column for positive class
+            scores = scores[:, 1]
+    except Exception:
+        scores = None
+    return metrics, y_test, scores
+
+
+def threshold_sweep(y_true, scores, num=50):
+    thresholds = np.linspace(np.min(scores), np.max(scores), num=num)
+    rows = []
+    for t in thresholds:
+        y_pred = (scores >= t).astype(int)
+        p = precision_score(y_true, y_pred, zero_division=0)
+        r = recall_score(y_true, y_pred, zero_division=0)
+        f = f1_score(y_true, y_pred, zero_division=0)
+        rows.append({"threshold": float(t), "precision": p, "recall": r, "f1": f})
+    return pd.DataFrame(rows)
+
+
+with st.expander("🔎 Model analysis & diagnostics", expanded=False):
+    df, X, y, model = load_dataset_and_model()
+    st.subheader("Class distribution")
+    distr = get_class_distribution(df)
+    st.bar_chart(distr)
+
+    st.subheader("Top tokens by class (SVM coefficients)")
+    top = get_top_tokens(model, top_n=20)
+    if top is not None:
+        top_pos, top_neg = top
+        pos_df = pd.DataFrame(top_pos, columns=["token", "weight"])
+        neg_df = pd.DataFrame(top_neg, columns=["token", "weight"])
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**Top tokens (spam)**")
+            st.table(pos_df)
+        with c2:
+            st.markdown("**Top tokens (ham)**")
+            st.table(neg_df)
+    else:
+        st.write("Model does not expose coefficients (unable to show tokens).")
+
+    st.subheader("Model performance")
+    metrics, y_test, scores = compute_performance(model, X, y)
+    st.write(metrics)
+    st.table(pd.DataFrame([metrics]).T.rename(columns={0: "value"}))
+
+    if scores is not None:
+        st.subheader("Threshold sweep (precision / recall / f1)")
+        sweep_df = threshold_sweep(y_test, scores, num=50)
+        st.line_chart(sweep_df.set_index("threshold")["precision"])
+        st.line_chart(sweep_df.set_index("threshold")["recall"])
+        st.line_chart(sweep_df.set_index("threshold")["f1"])
+        with st.expander("Threshold table"):
+            st.dataframe(sweep_df)
+    else:
+        st.write("Decision scores not available for threshold sweep.")
