@@ -19,6 +19,18 @@ sys.path.insert(0, str(root))
 
 from src.classify_email import classify
 
+# Import helpers (model & preprocess). Wrap in try/except so we can show a friendly
+# error message if these imports fail in the deployment environment.
+import_exception = None
+try:
+    from src.inference import load_model
+    from src.preprocess import load_data, prepare_dataframe
+except Exception as e:
+    load_model = None
+    load_data = None
+    prepare_dataframe = None
+    import_exception = e
+
 # Page config
 st.set_page_config(
     page_title="Spam Email Classifier",
@@ -180,6 +192,9 @@ def ensure_dataset(csv_path: str):
 def load_dataset_and_model():
     csv_path = os.path.join(root, "data", "sms_spam_no_header.csv")
     ensure_dataset(csv_path)
+    if import_exception is not None:
+        # Raise a clear error so Streamlit can show it in logs
+        raise RuntimeError(f"Failed to import project helpers: {import_exception}")
     df = load_data(csv_path)
     df = prepare_dataframe(df)
     X = df["text"].values
