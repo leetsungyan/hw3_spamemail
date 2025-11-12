@@ -96,14 +96,14 @@ with col2:
                     
                     # Display result
                     if label == "spam":
-                        st.error(f"🚨 **垃圾郵件**", icon="⚠️")
+                        st.error(f"🚨 **垃圾郵件**", icon="🚨")
                         st.metric(
                             label="信心度",
                             value=f"{confidence:.2%}",
                             delta="高風險" if confidence > 0.7 else "中風險" if confidence > 0.5 else "低風險"
                         )
                     else:
-                        st.success(f"✅ **正常郵件**", icon="✓")
+                        st.success(f"✅ **正常郵件**", icon="✅")
                         st.metric(
                             label="信心度",
                             value=f"{confidence:.2%}",
